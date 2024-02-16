@@ -1,5 +1,7 @@
 # tokamak-predeploy-contract-injector
 
+This package is for injecting predeploy contract to genesis file. If you include smart contract written solidity as the input, this package will compile it and add the contract bytecode into genesisfile.
+
 # Prerequisite
 
 - nodejs
