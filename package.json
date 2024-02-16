@@ -1,0 +1,31 @@
+{
+  "name": "tokamak-predeploy-contract-injector",
+  "version": "1.0.0",
+  "author": "rlgns98kr <rlgns98kr@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "npx tsc && node build/src/index.js",
+    "lint": "gts lint",
+    "clean": "gts clean",
+    "compile": "tsc",
+    "fix": "gts fix",
+    "prepare": "yarn run compile",
+    "pretest": "yarn run compile",
+    "posttest": "yarn run lint"
+  },
+  "dependencies": {
+    "@ethereumjs/evm": "^2.2.1",
+    "@ethereumjs/rlp": "^5.0.2",
+    "@ethereumjs/statemanager": "^2.2.2",
+    "@ethereumjs/trie": "^6.1.1",
+    "@ethereumjs/util": "^9.0.2",
+    "commander": "^12.0.0",
+    "solc": "0.8.15"
+  },
+  "devDependencies": {
+    "@ethereumjs/block": "^5.1.1",
+    "@types/node": "20.8.2",
+    "gts": "^5.2.0",
+    "typescript": "5.1.6"
+  }
+}
