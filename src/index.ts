@@ -1,13 +1,21 @@
-import {platform} from 'os';
-import {readFileSync, existsSync} from 'fs';
+import {exit} from 'process';
+import {readFileSync, existsSync, writeFileSync} from 'fs';
 import {resolve, relative} from 'path';
 
 import {program} from 'commander';
+import {encodeParameters} from 'web3-eth-abi';
 import {EVM} from '@ethereumjs/evm';
-import {Account, Address, hexToBytes, bytesToHex} from '@ethereumjs/util';
-import {RLP} from '@ethereumjs/rlp';
 import {DefaultStateManager} from '@ethereumjs/statemanager';
 import {Trie} from '@ethereumjs/trie';
+import {RLP} from '@ethereumjs/rlp';
+import {
+  Account,
+  Address,
+  hexToBytes,
+  bytesToHex,
+  stripHexPrefix,
+  addHexPrefix,
+} from '@ethereumjs/util';
 
 const solc = require('solc');
 
@@ -18,28 +26,28 @@ program
   .requiredOption('-g, --genesis-file <PATH>', 'path of genesis file')
   .requiredOption(
     '-ca, --contract-address <ADDRESS>',
-    'address of contract you want to inject',
-    '0x0000000000000000000000000000000000000042'
+    'address of contract you want to inject (example: "0x0000000000000000000000000000000000000042")'
   )
   .requiredOption('-b, --base-path <PATH>', 'base path of contract')
   .requiredOption(
     '-cn, --contract-name <STRING>',
-    'name of main contract',
-    'MainContract'
+    'name of main contract (example: "MainContract")'
   )
   .requiredOption(
     '-cf, --contract-file <PATH>',
-    'path of main contract file',
-    'MainContract.sol'
+    'path of main contract file (example: "MainContract.sol")'
   )
   .option(
-    '-c, --constructor <ARGS...>',
-    'constructor of contracts',
-    'uint256 2345675643 uint256 333'
+    '-cc, --contract-constructor <ARGS...>',
+    'constructor(type and value) of contracts (example: "uint256 uint256 2345675643 333")'
   )
   .option(
     '-s, --sender-address <ADDRESS>',
     'address of sender to deploy contract (It can be any address without sign. It used only to set storage if there is a logic in the contract constructor)'
+  )
+  .option(
+    '-cr, --contract-remappings <ARGS...>',
+    'remapping config (example: "@openzeppelin/contracts-upgradeable=lib/openzeppelin-contracts-upgradeable/contracts @openzeppelin/contracts=lib/openzeppelin-contracts/contracts")'
   );
 
 program.parse();
@@ -63,15 +71,6 @@ function readFileCallback(sourcePath: string) {
   };
 }
 
-function withUnixPathSeparators(filePath: string) {
-  // On UNIX-like systems forward slashes in paths are just a part of the file name.
-  if (platform() !== 'win32') {
-    return filePath;
-  }
-
-  return filePath.replace(/\\/g, '/');
-}
-
 function makeSourcePathRelativeIfPossible(sourcePath: string) {
   const absoluteBasePath = options.basePath
     ? resolve(options.basePath)
@@ -89,17 +88,48 @@ function makeSourcePathRelativeIfPossible(sourcePath: string) {
   const relativeSourcePath = relative(absolutePrefix, absoluteSourcePath);
 
   if (!relativeSourcePath.startsWith('../')) {
-    return withUnixPathSeparators(relativeSourcePath);
+    return relativeSourcePath;
   }
 
   // File is not located inside base path or include paths so use its absolute path.
-  return withUnixPathSeparators(absoluteSourcePath);
+  return absoluteSourcePath;
 }
 
 async function main() {
   const genesisJSON = JSON.parse(readFileSync(options.genesisFile).toString());
+  const contractAddress = new Address(hexToBytes(options.contractAddress));
 
-  const input = {
+  const contractConstructorArray = String(options.contractConstructor).split(
+    ','
+  );
+  const contractConstructor = options.contractConstructor
+    ? encodeParameters(
+        contractConstructorArray.slice(0, contractConstructorArray.length / 2),
+        contractConstructorArray.slice(contractConstructorArray.length / 2)
+      )
+    : '';
+
+  if (genesisJSON.alloc[stripHexPrefix(contractAddress.toString())]) {
+    console.log('Already exist contract address!');
+    exit(1);
+  }
+  genesisJSON.alloc[stripHexPrefix(contractAddress.toString())] = {
+    balance: addHexPrefix('0'),
+    storage: {},
+  };
+
+  const input: {
+    language: string;
+    sources: {};
+    settings: {
+      optimizer: {
+        enabled: boolean;
+        runs: number;
+      };
+      outputSelection: {};
+      remappings?: string[];
+    };
+  } = {
     language: 'Solidity',
     sources: {
       [makeSourcePathRelativeIfPossible(options.contractFile)]: {
@@ -116,11 +146,15 @@ async function main() {
           '*': ['*'],
         },
       },
+      remappings: String(options.contractRemappings).split(','),
     },
   };
 
+  if (input.settings.remappings && input.settings.remappings[0] === 'undefined')
+    delete input.settings.remappings;
+
   const output = JSON.parse(
-    solc.compile(JSON.stringify(input), {import: readFileCallback})
+    await solc.compile(JSON.stringify(input), {import: readFileCallback})
   );
 
   const evm = new EVM({
@@ -129,35 +163,41 @@ async function main() {
     }),
   });
 
-  const contractAddress = new Address(hexToBytes(options.contractAddress));
   evm.stateManager.putAccount(contractAddress, new Account());
-
   await evm.runCode({
     caller: options.senderAddress
       ? new Address(hexToBytes(options.senderAddress))
       : undefined,
     to: contractAddress,
     code: hexToBytes(
-      '0x' +
+      addHexPrefix(
         output.contracts[
           makeSourcePathRelativeIfPossible(options.contractFile)
-        ][options.contractName].evm.bytecode.object
+        ][options.contractName].evm.bytecode.object +
+          stripHexPrefix(contractConstructor)
+      )
     ),
   });
 
+  const contractBytecode = addHexPrefix(
+    output.contracts[makeSourcePathRelativeIfPossible(options.contractFile)][
+      options.contractName
+    ].evm.deployedBytecode.object
+  );
+  genesisJSON.alloc[stripHexPrefix(contractAddress.toString())].code =
+    contractBytecode;
+
   const contractStorage = await evm.stateManager.dumpStorage(contractAddress);
-
-  console.log(contractStorage);
-
   for (const [key, value] of Object.entries(contractStorage)) {
-    console.log(key, value);
-
     const decoded = RLP.decode(value) as Uint8Array;
-    console.log(bytesToHex(decoded));
+    genesisJSON.alloc[stripHexPrefix(contractAddress.toString())].storage[key] =
+      addHexPrefix(stripHexPrefix(bytesToHex(decoded)).padStart(64, '0'));
   }
 
-  // const decode = RLP.decode(dump[Object.keys(dump)[0]]) as Uint8Array;
-  // console.log(bytesToHex(decode));
+  writeFileSync(
+    'genesis_new_' + Date.now() + '.json',
+    JSON.stringify(genesisJSON, null, 2)
+  );
 }
 
 main();
