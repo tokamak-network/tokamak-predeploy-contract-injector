@@ -5,7 +5,7 @@ This package is for injecting predeploy contract to genesis file. If you include
 # Prerequisite
 
 - nodejs (https://nodejs.org/en/download)
-- yarn (https://classic.yarnpkg.com/lang/en/docs/install)
+- yarn (https://yarnpkg.com/getting-started/install)
 
 # Play
 
