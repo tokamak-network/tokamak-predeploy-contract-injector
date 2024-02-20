@@ -34,8 +34,8 @@ Options:
   -ca, --contract-address <ADDRESS>      address of contract you want to inject (example: "0x0000000000000000000000000000000000000042")
   -b, --base-path <PATH>                 base path of contract
   -cn, --contract-name <STRING>          name of main contract (example: "MainContract")
-  -cf, --contract-file <PATH>            path of main contract file (example: "MainContract.sol")
-  -cv, --compiler-version <STRING>       version of solidity compiler
+  -cf, --contract-file <PATH>            path of main contract file (example: "src/MainContract.sol")
+  -cv, --compiler-version <STRING>       version of solidity compiler (example: "v0.8.15+commit.e14f2714")
   -cc, --contract-constructor <ARGS...>  constructor(type and value) of contracts (example: "uint256 uint256 2345675643 333")
   -s, --sender-address <ADDRESS>         address of sender to deploy contract (It can be any address without sign. It used only to set storage if there is a logic in the contract constructor)
   -cr, --contract-remappings <ARGS...>   remapping config (example: "@openzeppelin/contracts-upgradeable=lib/openzeppelin-contracts-upgradeable/contracts
