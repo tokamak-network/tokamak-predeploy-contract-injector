@@ -35,11 +35,11 @@ program
   )
   .requiredOption(
     '-cf, --contract-file <PATH>',
-    'path of main contract file (example: "MainContract.sol")'
+    'path of main contract file (example: "src/MainContract.sol")'
   )
   .requiredOption(
     '-cv, --compiler-version <STRING>',
-    'version of solidity compiler'
+    'version of solidity compiler (example: "v0.8.15+commit.e14f2714")'
   )
   .option(
     '-cc, --contract-constructor <ARGS...>',
