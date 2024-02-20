@@ -16,7 +16,6 @@ import {
   stripHexPrefix,
   addHexPrefix,
 } from '@ethereumjs/util';
-import {error} from 'console';
 
 const solc = require('solc');
 
@@ -197,8 +196,6 @@ async function main() {
             )
           ),
         });
-
-        console.log(bytesToHex(evmOutput.returnValue));
 
         const contractBytecode = addHexPrefix(
           output.contracts[
