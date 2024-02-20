@@ -35,12 +35,15 @@ Options:
   -b, --base-path <PATH>                 base path of contract
   -cn, --contract-name <STRING>          name of main contract (example: "MainContract")
   -cf, --contract-file <PATH>            path of main contract file (example: "MainContract.sol")
+  -cv, --compiler-version <STRING>       version of solidity compiler
   -cc, --contract-constructor <ARGS...>  constructor(type and value) of contracts (example: "uint256 uint256 2345675643 333")
   -s, --sender-address <ADDRESS>         address of sender to deploy contract (It can be any address without sign. It used only to set storage if there is a logic in the contract constructor)
   -cr, --contract-remappings <ARGS...>   remapping config (example: "@openzeppelin/contracts-upgradeable=lib/openzeppelin-contracts-upgradeable/contracts
                                          @openzeppelin/contracts=lib/openzeppelin-contracts/contracts")
   -h, --help                             display help for command
 ```
+
+You can find solidity compiler version in https://github.com/ethereum/solc-bin/blob/gh-pages/bin/list.txt
 
 ### 3. Example
 
@@ -51,6 +54,8 @@ yarn start \
 -b ../tokamak-titan-canyon/packages/tokamak/contracts-bedrock/ \
 -cn Proxy \
 -cf ../tokamak-titan-canyon/packages/tokamak/contracts-bedrock/src/universal/Proxy.sol \
--cr @openzeppelin/contracts-upgradeable=lib/openzeppelin-contracts-upgradeable/contracts @openzeppelin/contracts=lib/openzeppelin-contracts/contracts @rari-capital/solmate=lib/solmate @cwia/=lib/clones-with-immutable-args/src forge-std=lib/forge-std/src ds-test=lib/forge-std/lib/ds-test/src safe-contracts=lib/safe-contracts/contracts \
--cc address 0x1000000000000000000000000000000000000042
+-cv v0.8.15+commit.e14f2714 \
+-cc address 0x1000000000000000000000000000000000000042 \
+-s 0x4860000000000000000000000000000000000042 \
+-cr @openzeppelin/contracts-upgradeable=lib/openzeppelin-contracts-upgradeable/contracts @openzeppelin/contracts=lib/openzeppelin-contracts/contracts @rari-capital/solmate=lib/solmate @cwia/=lib/clones-with-immutable-args/src forge-std=lib/forge-std/src ds-test=lib/forge-std/lib/ds-test/src safe-contracts=lib/safe-contracts/contracts
 ```

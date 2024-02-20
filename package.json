@@ -20,7 +20,7 @@
     "@ethereumjs/trie": "^6.1.1",
     "@ethereumjs/util": "^9.0.2",
     "commander": "^12.0.0",
-    "solc": "0.8.15",
+    "solc": "^0.8.24",
     "web3-eth-abi": "^4.2.0"
   },
   "devDependencies": {
