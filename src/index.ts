@@ -182,7 +182,7 @@ async function main() {
         });
 
         evm.stateManager.putAccount(contractAddress, new Account());
-        const evmOutput = await evm.runCode({
+        await evm.runCode({
           caller: options.senderAddress
             ? new Address(hexToBytes(options.senderAddress))
             : undefined,
